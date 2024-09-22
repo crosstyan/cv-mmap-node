@@ -31,6 +31,10 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_JS_INC})
 target_link_libraries(${PROJECT_NAME} ${CMAKE_JS_LIB})
 target_link_libraries(${PROJECT_NAME} cppzmq)
 
+add_executable(tester src/tester.cpp src/FrameReceiverImpl.hpp)
+target_include_directories(tester PRIVATE src)
+target_link_libraries(tester cppzmq)
+
 if(MSVC AND CMAKE_JS_NODELIB_DEF AND CMAKE_JS_NODELIB_TARGET)
     # Generate node.lib
     execute_process(COMMAND ${CMAKE_AR} /def:${CMAKE_JS_NODELIB_DEF} /out:${CMAKE_JS_NODELIB_TARGET} ${CMAKE_STATIC_LINKER_FLAGS})
