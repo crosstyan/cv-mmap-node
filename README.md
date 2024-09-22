@@ -29,5 +29,6 @@ use `cmake-js --print-configuration` to print the cmake configuration parameters
 
 - [Creating a native module by using CMake.js and NAN](https://github.com/cmake-js/cmake-js/wiki/TUTORIAL-01-Creating-a-native-module-by-using-CMake.js-and-NAN)
 - [examples/async_pi_estimate](https://github.com/nodejs/nan/tree/main/examples/async_pi_estimate)
+- [khomin/electron_ffmpeg_addon_camera](https://github.com/khomin/electron_ffmpeg_addon_camera)
 - [Developing with CLion](https://github.com/cmake-js/cmake-js/issues/23)
 - [How to Import Native Modules using the new ES6 Module Syntax](https://medium.com/the-node-js-collection/how-to-import-native-modules-using-the-new-es6-module-syntax-426ca3c44bed)
