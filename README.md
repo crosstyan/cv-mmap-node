@@ -10,20 +10,23 @@ use `cmake-js --print-configuration` to print the cmake configuration parameters
 
 ```txt
 # cmake ..
---no-warn-unused-cli,
--GNinja,
--DCMAKE_JS_VERSION=7.3.0,
--DCMAKE_BUILD_TYPE=Release,
--DCMAKE_LIBRARY_OUTPUT_DIRECTORY=/home/crosstyan/Code/cv-mmap-node/build/Release,
--DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded$<$<CONFIG:Debug>:Debug>,
--DCMAKE_JS_INC=/home/crosstyan/.cmake-js/node-x64/v22.7.0/include/node;/home/crosstyan/Code/cv-mmap-node/node_modules/nan,
--DCMAKE_JS_SRC=,
--DNODE_RUNTIME=node,
--DNODE_RUNTIMEVERSION=22.7.0,
--DNODE_ARCH=x64,
--DCMAKE_JS_LIB=,
+--no-warn-unused-cli
+-GNinja
+-DCMAKE_JS_VERSION=7.3.0
+-DCMAKE_BUILD_TYPE=Release
+-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=/home/crosstyan/Code/cv-mmap-node/build/Release
+-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded$<$<CONFIG:Debug>:Debug>
+-DCMAKE_JS_INC=/home/crosstyan/.cmake-js/node-x64/v22.7.0/include/node;/home/crosstyan/Code/cv-mmap-node/node_modules/nan
+-DCMAKE_JS_SRC=
+-DNODE_RUNTIME=node
+-DNODE_RUNTIMEVERSION=22.7.0
+-DNODE_ARCH=x64
+-DCMAKE_JS_LIB=
 -DCMAKE_CXX_FLAGS=-DBUILDING_NODE_EXTENSION
 ```
+
+In practice, I just set `CMAKE_JS_INC` to get the correct include path. I still use `cmake-js build` to build the project, instead of
+the IDE's build command.
 
 ## Reference
 

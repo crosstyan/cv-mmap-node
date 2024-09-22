@@ -7,7 +7,7 @@
  ********************************************************************/
 
 #include <cstdlib>
-#include "pi_est.h"  // NOLINT(build/include)
+#include "pi_est.h"
 
 /*
 Estimate the value of π by using a Monte Carlo method.
