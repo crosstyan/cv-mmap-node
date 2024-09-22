@@ -1,30 +1,15 @@
-/*********************************************************************
- * NAN - Native Abstractions for Node.js
- *
- * Copyright (c) 2018 NAN contributors
- *
- * MIT License <https://github.com/nodejs/nan/blob/master/LICENSE.md>
- ********************************************************************/
-
-#include <nan.h>
-#include "sync.h"   // NOLINT(build/include)
+#include <napi.h>
 #include "async.h"  // NOLINT(build/include)
-
-using v8::FunctionTemplate;
-using v8::Object;
-using v8::String;
-using Nan::GetFunction;
-using Nan::New;
-using Nan::Set;
+#include "sync.h"   // NOLINT(build/include)
 
 // Expose synchronous and asynchronous access to our
 // Estimate() function
-NAN_MODULE_INIT(InitAll) {
-  Set(target, New<String>("calculateSync").ToLocalChecked(),
-    GetFunction(New<FunctionTemplate>(CalculateSync)).ToLocalChecked());
-
-  Set(target, New<String>("calculateAsync").ToLocalChecked(),
-    GetFunction(New<FunctionTemplate>(CalculateAsync)).ToLocalChecked());
+Napi::Object Init(Napi::Env env, Napi::Object exports) {
+  exports.Set(Napi::String::New(env, "calculateSync"),
+              Napi::Function::New(env, CalculateSync));
+  exports.Set(Napi::String::New(env, "calculateAsync"),
+              Napi::Function::New(env, CalculateAsync));
+  return exports;
 }
 
-NODE_MODULE(addon, InitAll)
+NODE_API_MODULE(NODE_GYP_MODULE_NAME, Init)

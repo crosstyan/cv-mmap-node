@@ -30,7 +30,9 @@ the IDE's build command.
 
 ## Reference
 
-- [Creating a native module by using CMake.js and NAN](https://github.com/cmake-js/cmake-js/wiki/TUTORIAL-01-Creating-a-native-module-by-using-CMake.js-and-NAN)
+- [`napi-rs`](https://github.com/napi-rs/napi-rs)
+- [N-API documentation on CMake.js](https://github.com/nodejs/node-addon-api/blob/main/doc/cmake-js.md)
+- [~~Creating a native module by using CMake.js and NAN~~](https://github.com/cmake-js/cmake-js/wiki/TUTORIAL-01-Creating-a-native-module-by-using-CMake.js-and-NAN) don't use Nan
 - [examples/async_pi_estimate](https://github.com/nodejs/nan/tree/main/examples/async_pi_estimate)
 - [khomin/electron_ffmpeg_addon_camera](https://github.com/khomin/electron_ffmpeg_addon_camera)
 - [Developing with CLion](https://github.com/cmake-js/cmake-js/issues/23)
