@@ -65,10 +65,11 @@ inline void FrameReceiver::onFrame(const sync_message_t &msg, std::span<const ui
 		obj.Set("height", msg.info.height);
 		obj.Set("channels", msg.info.channels);
 		// https://github.com/nodejs/node-addon-api/blob/main/doc/buffer.md
-		// Use new to avoid copying the data
-		auto buffer = Napi::Buffer<uint8_t>::New(env, const_cast<uint8_t *>(data.data()), data.size());
-		// Cannot freeze array buffer views with elements
-		obj.Set("data", buffer);
+		// Wraps the provided external data into a new Napi::Buffer object.
+		// When the external buffer is not supported,
+		// allocates a new Napi::Buffer object and copies the provided external data into it.
+		auto buffer = Napi::Buffer<uint8_t>::NewOrCopy(env, const_cast<uint8_t *>(data.data()), data.size());
+		obj.Set("data", std::move(buffer));
 		freeze.Call({obj});
 		jsCallback.Call({obj});
 		delete args_ptr;
