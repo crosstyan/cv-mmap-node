@@ -4,7 +4,9 @@
 		"node-addon-api": "^8.1.0"
 	},
 	"scripts": {
-		"install": "cmake-js compile"
+		"install": "cmake-js compile",
+		"compile": "cmake-js compile",
+		"print-configuration": "cmake-js --print-configuration"
 	},
 	"binary": {
 		"napi_versions": [8]

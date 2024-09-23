@@ -8,21 +8,29 @@ use `cmake-js build` to build.
 
 use `cmake-js --print-configuration` to print the cmake configuration parameters, which could be used in your IDE.
 
-```txt
-# cmake ..
---no-warn-unused-cli
--GNinja
--DCMAKE_JS_VERSION=7.3.0
--DCMAKE_BUILD_TYPE=Release
--DCMAKE_LIBRARY_OUTPUT_DIRECTORY=/home/crosstyan/Code/cv-mmap-node/build/Release
--DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded$<$<CONFIG:Debug>:Debug>
--DCMAKE_JS_INC=/home/crosstyan/.cmake-js/node-x64/v22.7.0/include/node;/home/crosstyan/Code/cv-mmap-node/node_modules/nan
--DCMAKE_JS_SRC=
--DNODE_RUNTIME=node
--DNODE_RUNTIMEVERSION=22.7.0
--DNODE_ARCH=x64
--DCMAKE_JS_LIB=
--DCMAKE_CXX_FLAGS=-DBUILDING_NODE_EXTENSION
+```log
+info TOOL Using Ninja generator, because ninja is available.
+info CMD CONFIGURE
+info RUN [
+info RUN   'cmake',
+info RUN   '/Users/crosstyan/Code/cv-mmap-node',
+info RUN   '--no-warn-unused-cli',
+info RUN   '-G',
+info RUN   'Ninja',
+info RUN   '-DCMAKE_JS_VERSION=7.3.0',
+info RUN   '-DCMAKE_BUILD_TYPE=Release',
+info RUN   '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=/Users/crosstyan/Code/cv-mmap-node/build/Release',
+info RUN   '-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded$<$<CONFIG:Debug>:Debug>',
+info RUN   '-DCMAKE_JS_INC=/Users/crosstyan/Code/cv-mmap-node/node_modules/.pnpm/node-api-headers@1.3.0/node_modules/node-api-headers/include;/Users/crosstyan/Code/cv-mmap-node/node_modules/.pnpm/node-addon-api@8.1.0/node_modules/node-addon-api',
+info RUN   '-DCMAKE_JS_SRC=',
+info RUN   '-DNODE_RUNTIME=node',
+info RUN   '-DNODE_RUNTIMEVERSION=22.9.0',
+info RUN   '-DNODE_ARCH=arm64',
+info RUN   '-DCMAKE_OSX_ARCHITECTURES=arm64',
+info RUN   '-DCMAKE_JS_LIB=',
+info RUN   '-DCMAKE_CXX_FLAGS=-D_DARWIN_USE_64_BIT_INODE=1 -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -DBUILDING_NODE_EXTENSION',
+info RUN   '-DCMAKE_SHARED_LINKER_FLAGS=-undefined dynamic_lookup'
+info RUN ]
 ```
 
 In practice, I just set `CMAKE_JS_INC` to get the correct include path. I still use `cmake-js build` to build the project, instead of

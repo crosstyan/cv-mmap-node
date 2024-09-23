@@ -4,6 +4,7 @@
 
 #ifndef FRAMERECEIVERIMPL_HPP
 #define FRAMERECEIVERIMPL_HPP
+#include <cstdint>
 #include <optional>
 #include <thread>
 #include <atomic>
@@ -14,6 +15,7 @@
 #include <SyncMsg.hpp>
 #include <sys/mman.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 #ifdef TRACE_LOG_STDOUT
 #include <iostream>
@@ -39,8 +41,17 @@ class FrameReceiverImpl {
 	std::unique_ptr<std::thread> receiver_thread = nullptr;
 	on_frame_t on_frame                          = nullptr;
 
+	inline std::optional<std::span<const uint8_t>> frame_buffer() {
+		if (shm_ptr != nullptr && reference_frame_info.has_value()) {
+			const auto buffer_size = reference_frame_info.value().buffer_size;
+			return std::span<const uint8_t>(static_cast<const uint8_t *>(shm_ptr), buffer_size);
+		}
+		return std::nullopt;
+	}
+
 public:
 	FrameReceiverImpl(std::string shm_name, std::string zmq_addr) : shm_name(std::move(shm_name)), zmq_addr(std::move(zmq_addr)) {}
+	~FrameReceiverImpl() { stop(); }
 	[[nodiscard]]
 	std::expected<unit_t, std::string> start() {
 		using ue_t = std::unexpected<std::string>;
@@ -56,35 +67,35 @@ public:
 			return ue_t(std::format("Failed to connect to `{}`; {}", zmq_addr, e.what()));
 		}
 #ifdef TRACE_LOG_STDOUT
-		std::print("Connected to {}\n", zmq_addr);
+		std::println("Connected to {}", zmq_addr);
 #endif
 		shm_fd = shm_open(shm_name.c_str(), O_RDONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 		if (shm_fd == -1) {
 			return ue_t(std::format("Failed to open shared memory `{}`; {}", shm_name, strerror(errno)));
 		}
 #ifdef TRACE_LOG_STDOUT
-		std::print("Opened shared memory {}\n", shm_name);
+		std::println("Opened shared memory {}", shm_name);
 #endif
 		receiver_thread = std::make_unique<std::thread>([this] {
 #ifdef TRACE_LOG_STDOUT
-			std::print("Thread started\n");
+			std::println("Thread started");
 #endif
 			is_running         = true;
 			const auto on_init = [this](const sync_message_t &msg) -> bool {
 #ifdef TRACE_LOG_STDOUT
-				std::print("Received init message: frame_count={}, width={}, height={}, channels={}, depth={}, buffer_size={}\n",
-						   msg.frame_count, msg.info.width, msg.info.height, msg.info.channels, msg.info.depth, msg.info.buffer_size);
+				std::println("Received init message: frame_count={}, width={}, height={}, channels={}, depth={}, buffer_size={}",
+							 msg.frame_count, msg.info.width, msg.info.height, msg.info.channels, msg.info.depth, msg.info.buffer_size);
 #endif
 				reference_frame_info = msg.info;
 				shm_ptr              = mmap(nullptr, msg.info.buffer_size, PROT_READ, MAP_SHARED, shm_fd.value(), 0);
 				if (shm_ptr == MAP_FAILED) {
 #ifdef TRACE_LOG_STDOUT
-					std::print("Failed to map shared memory: {}\n", strerror(errno));
+					std::println("Failed to map shared memory: {}", strerror(errno));
 #endif
 					return false;
 				}
 				if (on_frame) {
-					on_frame(msg, std::span<const uint8_t>(static_cast<const uint8_t *>(shm_ptr), msg.info.buffer_size));
+					on_frame(msg, frame_buffer().value());
 				}
 				has_init = true;
 				return true;
@@ -95,17 +106,20 @@ public:
 				if (!res) {
 					continue;
 				}
-				auto msg_opt = sync_message_t::unmarshal(std::span<uint8_t>(static_cast<uint8_t *>(msg.data()), *res));
-				if (!msg_opt.has_value()) {
+				const auto msg_opt = sync_message_t::unmarshal(std::span<uint8_t>(static_cast<uint8_t *>(msg.data()), *res));
+				if (not msg_opt) {
 					continue;
 				}
 				if (not has_init) {
 					if (not on_init(msg_opt.value())) {
+#ifdef TRACE_LOG_STDOUT
+						std::println("Failed to initialize");
+#endif
 						is_running = false;
 					}
 				} else {
 					if (on_frame) {
-						on_frame(msg_opt.value(), std::span<const uint8_t>(static_cast<const uint8_t *>(shm_ptr), msg_opt.value().info.buffer_size));
+						on_frame(msg_opt.value(), frame_buffer().value());
 					}
 				}
 			}
@@ -124,25 +138,31 @@ public:
 
 	void stop() {
 		is_running = false;
-		if (receiver_thread->joinable()) {
+		if (receiver_thread) {
+			if (receiver_thread->joinable()) {
 #ifdef TRACE_LOG_STDOUT
-			std::print("Joining thread\n");
+				std::println("Joining thread");
 #endif
-			receiver_thread->join();
+				receiver_thread->join();
+			}
 		}
 		receiver_thread.reset();
 		if (shm_ptr != nullptr) {
 #ifdef TRACE_LOG_STDOUT
-			std::print("Unmapping shared memory\n");
+			std::println("Unmapping shared memory");
 #endif
-			munmap(shm_ptr, reference_frame_info.value().buffer_size);
+			if (reference_frame_info) {
+				const auto buffer_size = reference_frame_info.value().buffer_size;
+				munmap(shm_ptr, buffer_size);
+			}
 			shm_ptr = nullptr;
 		}
-		if (shm_fd.has_value()) {
+		reference_frame_info.reset();
+		if (shm_fd) {
 #ifdef TRACE_LOG_STDOUT
-			std::print("Closing shared memory\n");
+			std::println("Closing shared memory");
 #endif
-			close(shm_fd.value());
+			close(*shm_fd);
 		}
 		shm_fd.reset();
 		has_init = false;

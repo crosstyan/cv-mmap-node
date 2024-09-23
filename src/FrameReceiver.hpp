@@ -57,11 +57,15 @@ inline Napi::Value FrameReceiver::Stop(const Napi::CallbackInfo &info) {
 
 inline FrameReceiver::FrameReceiver(const Napi::CallbackInfo &info) : Napi::ObjectWrap<FrameReceiver>(info) {
 	if (info.Length() < 2) {
-		Napi::TypeError::New(info.Env(), "Expected 2 arguments").ThrowAsJavaScriptException();
+		Napi::TypeError::New(info.Env(), "Expected 2 arguments (`shm_name` and `zmq_addr`)").ThrowAsJavaScriptException();
 		return;
 	}
-	if (!info[0].IsString() || !info[1].IsString()) {
-		Napi::TypeError::New(info.Env(), "Expected 2 strings").ThrowAsJavaScriptException();
+	if (not info[0].IsString()){
+		Napi::TypeError::New(info.Env(), "`shm_name` is expected to be string").ThrowAsJavaScriptException();
+		return;
+	}
+	if (not info[1].IsString()){
+		Napi::TypeError::New(info.Env(), "`zmq_addr` is expected to be string").ThrowAsJavaScriptException();
 		return;
 	}
 	auto shm_name = info[0].As<Napi::String>().Utf8Value();
