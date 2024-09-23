@@ -3,8 +3,6 @@
 #include "sync.h"   // NOLINT(build/include)
 #include "FrameReceiver.hpp" // NOLINT(build/include)
 
-// Expose synchronous and asynchronous access to our
-// Estimate() function
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
   exports.Set(Napi::String::New(env, "calculateSync"),
               Napi::Function::New(env, CalculateSync));

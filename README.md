@@ -6,7 +6,7 @@ This is an example project that uses [cmake-js](https://github.com/cmake-js/cmak
 
 use `cmake-js build` to build.
 
-use `cmake-js --print-configuration` to print the cmake configuration parameters, which could be used in your IDE.
+use `cmake-js print-configuration` to print the cmake configuration parameters, which could be used in your IDE.
 
 ```log
 info TOOL Using Ninja generator, because ninja is available.
@@ -46,4 +46,3 @@ the IDE's build command.
 - [Developing with CLion](https://github.com/cmake-js/cmake-js/issues/23)
 - [How to Import Native Modules using the new ES6 Module Syntax](https://medium.com/the-node-js-collection/how-to-import-native-modules-using-the-new-es6-module-syntax-426ca3c44bed)
 - [NAN to Node-API Migration: A Short Story](https://nodesource.com/blog/NAN-to-Node-API-migration-a-short-story/)
-
