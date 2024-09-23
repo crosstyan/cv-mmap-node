@@ -1,5 +1,6 @@
 {
 	"dependencies": {
+		"@types/node": "^22.5.5",
 		"cmake-js": "^7.3.0",
 		"node-addon-api": "^8.1.0"
 	},
@@ -11,7 +12,9 @@
 		"print-configuration": "cmake-js print-configuration"
 	},
 	"binary": {
-		"napi_versions": [8]
+		"napi_versions": [
+			8
+		]
 	},
 	"type": "module"
 }
