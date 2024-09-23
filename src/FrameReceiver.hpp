@@ -13,10 +13,11 @@
 
 namespace app {
 using namespace Napi;
+using Napi::Error;
 using Napi::Object;
+using Napi::RangeError;
 using Napi::TypeError;
 using Napi::Value;
-using Context = Reference<Value>;
 
 // https://github.com/nodejs/node-addon-api/blob/main/doc/object_wrap.md
 // https://gitlab.ifi.uzh.ch/scheid/bcoln/-/blob/619c184df737026b2c7ae222d76da7435f101d9a/Web3/web3js/node_modules/node-addon-api/doc/object_wrap.md
@@ -81,19 +82,19 @@ inline void FrameReceiver::onFrame(const sync_message_t &msg, std::span<const ui
 inline Napi::Value FrameReceiver::Start(const Napi::CallbackInfo &info) {
 	auto env = info.Env();
 	if (impl_ == nullptr) {
-		throw TypeError::New(env, "Not initialized");
+		throw Error::New(env, "Not initialized");
 	}
 	if (const auto res = impl_->start()) {
 		return Napi::Boolean::New(env, true);
 	} else {
-		throw TypeError::New(env, res.error());
+		throw Error::New(env, res.error());
 	}
 }
 
 inline Napi::Value FrameReceiver::Stop(const Napi::CallbackInfo &info) {
 	auto env = info.Env();
 	if (impl_ == nullptr) {
-		throw TypeError::New(env, "Not initialized");
+		throw Error::New(env, "Not initialized");
 	}
 	impl_->stop();
 	return env.Undefined();
