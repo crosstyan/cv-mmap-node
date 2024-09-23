@@ -45,3 +45,5 @@ the IDE's build command.
 - [khomin/electron_ffmpeg_addon_camera](https://github.com/khomin/electron_ffmpeg_addon_camera)
 - [Developing with CLion](https://github.com/cmake-js/cmake-js/issues/23)
 - [How to Import Native Modules using the new ES6 Module Syntax](https://medium.com/the-node-js-collection/how-to-import-native-modules-using-the-new-es6-module-syntax-426ca3c44bed)
+- [NAN to Node-API Migration: A Short Story](https://nodesource.com/blog/NAN-to-Node-API-migration-a-short-story/)
+

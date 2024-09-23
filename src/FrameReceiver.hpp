@@ -12,9 +12,17 @@
 #include <optional>
 
 namespace app {
+using namespace Napi;
+using Napi::TypeError;
+using Napi::Value;
+using Napi::Object;
+using Context = Reference<Value>;
+
 // https://github.com/nodejs/node-addon-api/blob/main/doc/object_wrap.md
-// https://nodesource.com/blog/NAN-to-Node-API-migration-a-short-story/
 // https://github.com/nodejs/node-addon-api/blob/main/doc/threadsafe_function.md
+// https://github.com/nodejs/node-addon-api/blob/main/doc/threadsafe.md
+// https://github.com/nodejs/node-addon-api/blob/main/doc/typed_threadsafe_function.md
+
 class FrameReceiver : public Napi::ObjectWrap<FrameReceiver> {
 	std::unique_ptr<FrameReceiverImpl> impl_ = nullptr;
 
@@ -33,23 +41,20 @@ public:
 inline Napi::Value FrameReceiver::Start(const Napi::CallbackInfo &info) {
 	auto env = info.Env();
 	if (impl_ == nullptr) {
-		Napi::TypeError::New(env, "Not initialized").ThrowAsJavaScriptException();
-		return env.Undefined();
+		throw TypeError::New(env, "Not initialized");
 	}
 	auto res = impl_->start();
 	if (res) {
 		return Napi::Boolean::New(env, true);
 	} else {
-		Napi::TypeError::New(env, res.error()).ThrowAsJavaScriptException();
-		return env.Undefined();
+		throw TypeError::New(env, res.error());
 	}
 }
 
 inline Napi::Value FrameReceiver::Stop(const Napi::CallbackInfo &info) {
 	auto env = info.Env();
 	if (impl_ == nullptr) {
-		Napi::TypeError::New(env, "Not initialized").ThrowAsJavaScriptException();
-		return env.Undefined();
+		throw TypeError::New(env, "Not initialized");
 	}
 	impl_->stop();
 	return env.Undefined();
@@ -57,16 +62,13 @@ inline Napi::Value FrameReceiver::Stop(const Napi::CallbackInfo &info) {
 
 inline FrameReceiver::FrameReceiver(const Napi::CallbackInfo &info) : Napi::ObjectWrap<FrameReceiver>(info) {
 	if (info.Length() < 2) {
-		Napi::TypeError::New(info.Env(), "Expected 2 arguments (`shm_name` and `zmq_addr`)").ThrowAsJavaScriptException();
-		return;
+		throw TypeError::New(info.Env(), "Expected 2 arguments (`shm_name` and `zmq_addr`)");
 	}
-	if (not info[0].IsString()){
-		Napi::TypeError::New(info.Env(), "`shm_name` is expected to be string").ThrowAsJavaScriptException();
-		return;
+	if (not info[0].IsString()) {
+		throw TypeError::New(info.Env(), "`shm_name` is expected to be string");
 	}
-	if (not info[1].IsString()){
-		Napi::TypeError::New(info.Env(), "`zmq_addr` is expected to be string").ThrowAsJavaScriptException();
-		return;
+	if (not info[1].IsString()) {
+		throw TypeError::New(info.Env(), "`zmq_addr` is expected to be string");
 	}
 	auto shm_name = info[0].As<Napi::String>().Utf8Value();
 	auto zmq_addr = info[1].As<Napi::String>().Utf8Value();
