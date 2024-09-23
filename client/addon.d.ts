@@ -14,7 +14,9 @@ declare module "addon" {
     export class FrameReceiver {
         constructor(shm_name: string, zmq_addr: string);
 
-        start(): void;
+        // Returns true if the receiver was started successfully,
+        // otherwise throws an exception.
+        start(): boolean;
 
         stop(): void;
 

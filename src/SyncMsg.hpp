@@ -8,7 +8,7 @@
 #include <optional>
 #include <span>
 
-namespace app{
+namespace app {
 // https://docs.opencv.org/4.x/d3/d63/classcv_1_1Mat.html
 // See `Detailed Description`
 // strides for each dimension
@@ -65,4 +65,4 @@ struct __attribute__((packed)) sync_message_t {
 };
 }
 
-#endif //SYNCMSG_HPP
+#endif // SYNCMSG_HPP

@@ -1,6 +1,6 @@
 import {createRequire} from 'module'
 
-const IS_DEBUG = true
+const IS_DEBUG = false
 const require = createRequire(import.meta.url)
 const addon = IS_DEBUG ? require("../build/Debug/addon.node") : require("../build/Release/addon.node")
 const SHM_NAME = "/psm_default"

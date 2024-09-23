@@ -14,8 +14,9 @@ find_package(cppzmq)
 
 # ----------- Node Addon Setup -----------
 add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES} ${CMAKE_JS_SRC})
-target_sources(${PROJECT_NAME} PRIVATE src/addon.cc src/async.cc src/sync.cc
-                                       src/pi_est.cc src/FrameReceiver.hpp)
+target_sources(${PROJECT_NAME} PRIVATE
+        src/addon.cc
+        src/FrameReceiver.hpp)
 target_include_directories(${PROJECT_NAME} PRIVATE src)
 
 # Gives our library file a .node extension without any "lib" prefix
@@ -26,14 +27,14 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_JS_INC})
 target_link_libraries(${PROJECT_NAME} ${CMAKE_JS_LIB})
 target_link_libraries(${PROJECT_NAME} cppzmq)
 
-if(MSVC
-   AND CMAKE_JS_NODELIB_DEF
-   AND CMAKE_JS_NODELIB_TARGET)
-  # Generate node.lib
-  execute_process(
-    COMMAND ${CMAKE_AR} /def:${CMAKE_JS_NODELIB_DEF}
+if (MSVC
+        AND CMAKE_JS_NODELIB_DEF
+        AND CMAKE_JS_NODELIB_TARGET)
+    # Generate node.lib
+    execute_process(
+            COMMAND ${CMAKE_AR} /def:${CMAKE_JS_NODELIB_DEF}
             /out:${CMAKE_JS_NODELIB_TARGET} ${CMAKE_STATIC_LINKER_FLAGS})
-endif()
+endif ()
 # ----------- End of Node Addon Setup -----------
 
 # ----------- Tester Setup -----------
