@@ -33,14 +33,25 @@ info RUN   '-DCMAKE_SHARED_LINKER_FLAGS=-undefined dynamic_lookup'
 info RUN ]
 ```
 
-In practice, I just set `CMAKE_JS_INC` to get the correct include path. I still use `cmake-js build` to build the project, instead of
+In practice, I just set `CMAKE_JS_INC` to get the correct include path. I still use `cmake-js build` to build the
+project, instead of
 the IDE's build command.
+
+## Usage
+
+Open the server ([crosstyan/cv-mmap](https://github.com/crosstyan/cv-mmap)) and run the following command:
+
+```bash
+node client/test_receiver.js
+```
 
 ## Reference
 
 - [`napi-rs`](https://github.com/napi-rs/napi-rs)
 - [N-API documentation on CMake.js](https://github.com/nodejs/node-addon-api/blob/main/doc/cmake-js.md)
-- [~~Creating a native module by using CMake.js and NAN~~](https://github.com/cmake-js/cmake-js/wiki/TUTORIAL-01-Creating-a-native-module-by-using-CMake.js-and-NAN) don't use Nan
+- [~~Creating a native module by using CMake.js and
+  NAN~~](https://github.com/cmake-js/cmake-js/wiki/TUTORIAL-01-Creating-a-native-module-by-using-CMake.js-and-NAN) don't
+  use Nan
 - [examples/async_pi_estimate](https://github.com/nodejs/nan/tree/main/examples/async_pi_estimate)
 - [khomin/electron_ffmpeg_addon_camera](https://github.com/khomin/electron_ffmpeg_addon_camera)
 - [Developing with CLion](https://github.com/cmake-js/cmake-js/issues/23)
