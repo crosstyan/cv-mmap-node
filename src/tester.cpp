@@ -8,13 +8,6 @@
 constexpr auto SHM_NAME = "/psm_default";
 constexpr auto ZMQ_ADDR = "ipc:///tmp/0";
 
-std::string to_hex(const std::span<const uint8_t> data) {
-	std::stringstream ss;
-	for (const auto &byte : data) {
-		ss << std::format("{:02X}", byte);
-	}
-	return ss.str();
-}
 
 int main() {
 	auto impl = app::FrameReceiverImpl(SHM_NAME, ZMQ_ADDR);
@@ -23,7 +16,7 @@ int main() {
 		const auto offset = data.size() - 40;
 		std::print("[main] frame@{} {}x{}x{}; {}\n",
 				   msg.frame_count, msg.info.width, msg.info.height, msg.info.channels,
-				   to_hex(data.subspan(offset, 40)));
+				   app::to_hex(data.subspan(offset, 40)));
 	});
 	if (auto res = impl.start(); res.has_value()) {
 		std::cout << "Started" << std::endl;

@@ -23,8 +23,17 @@
 #endif
 
 namespace app {
-using unit_t     = std::monostate;
-using on_frame_t = std::function<void(const sync_message_t &, std::span<const uint8_t>)>;
+inline std::string to_hex(const std::span<const uint8_t> data) {
+	std::stringstream ss;
+	for (const auto &byte : data) {
+		ss << std::format("{:02X}", byte);
+	}
+	return ss.str();
+}
+
+constexpr auto FRAME_TOPIC_MAGIC = 0x7d;
+using unit_t                     = std::monostate;
+using on_frame_t                 = std::function<void(const sync_message_t &, std::span<const uint8_t>)>;
 class FrameReceiverImpl {
 	std::string shm_name;
 	std::string zmq_addr;
@@ -60,12 +69,15 @@ public:
 		}
 		has_init   = false;
 		this->ctx  = zmq::context_t{};
-		this->sock = zmq::socket_t(ctx, zmq::socket_type::pull);
+		this->sock = zmq::socket_t(ctx, zmq::socket_type::sub);
 		try {
 			sock.connect(zmq_addr);
 		} catch (const zmq::error_t &e) {
 			return ue_t(std::format("Failed to connect to `{}`; {}", zmq_addr, e.what()));
 		}
+		// subscribe to all topics (we only have one kind of message anyway)
+		constexpr auto topic_buffer = std::array<uint8_t, 1>{FRAME_TOPIC_MAGIC};
+		sock.set(zmq::sockopt::subscribe, zmq::buffer(topic_buffer));
 #ifdef TRACE_LOG_STDOUT
 		std::println("Connected to {}", zmq_addr);
 #endif
@@ -106,8 +118,15 @@ public:
 				if (!res) {
 					continue;
 				}
+				if (msg.size() == 1) {
+					// skip the topic
+					continue;
+				}
 				const auto msg_opt = sync_message_t::unmarshal(std::span<uint8_t>(static_cast<uint8_t *>(msg.data()), *res));
 				if (not msg_opt) {
+#ifdef TRACE_LOG_STDOUT
+					std::println("Failed to unmarshal message {}", to_hex(std::span<uint8_t>(static_cast<uint8_t *>(msg.data()), *res)));
+#endif
 					continue;
 				}
 				if (not has_init) {
