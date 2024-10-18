@@ -26,9 +26,23 @@ using Napi::Value;
 // https://github.com/nodejs/node-addon-api/blob/main/doc/typed_threadsafe_function.md
 // https://github.com/nodejs/node-addon-api/blob/main/doc/error_handling.md
 
+void BgrToRgba(const std::span<const uint8_t> &src, Napi::Buffer<uint8_t> &dst) {
+	const auto expected_dst_size = src.size() * 3 / 4;
+	if (dst.Length() != expected_dst_size) {
+		throw RangeError::New(dst.Env(), "src and dst size mismatch");
+	}
+	for (size_t i = 0; i < src.size(); i += 3) {
+		dst[i + 0] = src[i + 2];
+		dst[i + 1] = src[i + 1];
+		dst[i + 2] = src[i + 0];
+		dst[i + 3] = 0xff;
+	}
+}
+
 class FrameReceiver final : public Napi::ObjectWrap<FrameReceiver> {
-	std::unique_ptr<FrameReceiverImpl> impl_ = nullptr;
-	ThreadSafeFunction tsfn_                 = nullptr;
+	std::unique_ptr<FrameReceiverImpl> impl_       = nullptr;
+	std::unique_ptr<Napi::Buffer<uint8_t>> buffer_ = nullptr;
+	ThreadSafeFunction tsfn_                       = nullptr;
 
 	void onFrame(const sync_message_t &msg, std::span<const uint8_t> data) const;
 
@@ -69,7 +83,9 @@ inline void FrameReceiver::onFrame(const sync_message_t &msg, std::span<const ui
 		// Wraps the provided external data into a new Napi::Buffer object.
 		// When the external buffer is not supported,
 		// allocates a new Napi::Buffer object and copies the provided external data into it.
-		auto buffer = Napi::Buffer<uint8_t>::NewOrCopy(env, const_cast<uint8_t *>(data.data()), data.size());
+		const auto size = data.size() * 4 / 3;
+		auto buffer     = Napi::Buffer<uint8_t>::New(env, size);
+		BgrToRgba(data, buffer);
 		obj.Set("data", std::move(buffer));
 		freeze.Call({obj});
 		jsCallback.Call({obj});
