@@ -7,6 +7,9 @@
 #include "FrameReceiverImpl.hpp"
 
 
+#include <cstddef>
+#include <format>
+#include <print>
 #include <napi.h>
 #include <zmq_addon.hpp>
 #include <optional>
@@ -27,15 +30,18 @@ using Napi::Value;
 // https://github.com/nodejs/node-addon-api/blob/main/doc/error_handling.md
 
 void BgrToRgba(const std::span<const uint8_t> &src, Napi::Buffer<uint8_t> &dst) {
-	const auto expected_dst_size = src.size() * 3 / 4;
+	const auto expected_dst_size = (src.size() / 3) * 4;
 	if (dst.Length() != expected_dst_size) {
-		throw RangeError::New(dst.Env(), "src and dst size mismatch");
+		throw RangeError::New(dst.Env(), std::format("lhs({}) != rhs({})", dst.Length(), expected_dst_size));
 	}
-	for (size_t i = 0; i < src.size(); i += 3) {
-		dst[i + 0] = src[i + 2];
-		dst[i + 1] = src[i + 1];
-		dst[i + 2] = src[i + 0];
-		dst[i + 3] = 0xff;
+	size_t i = 0;
+	size_t j = 0;
+	while (i < src.size()) {
+		dst[j++] = src[i + 2];
+		dst[j++] = src[i + 1];
+		dst[j++] = src[i];
+		dst[j++] = 255;
+		i += 3;
 	}
 }
 
@@ -83,7 +89,7 @@ inline void FrameReceiver::onFrame(const sync_message_t &msg, std::span<const ui
 		// Wraps the provided external data into a new Napi::Buffer object.
 		// When the external buffer is not supported,
 		// allocates a new Napi::Buffer object and copies the provided external data into it.
-		const auto size = data.size() * 4 / 3;
+		const auto size = (data.size() / 3) * 4;
 		auto buffer     = Napi::Buffer<uint8_t>::New(env, size);
 		BgrToRgba(data, buffer);
 		obj.Set("data", std::move(buffer));

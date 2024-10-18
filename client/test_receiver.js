@@ -3,8 +3,8 @@ import {createRequire} from 'module'
 const IS_DEBUG = false
 const require = createRequire(import.meta.url)
 const addon = IS_DEBUG ? require("../build/Debug/addon.node") : require("../build/Release/addon.node")
-const SHM_NAME = "/psm_default"
-const ZMQ_ADDR = "ipc:///tmp/0"
+const SHM_NAME = "/fl"
+const ZMQ_ADDR = "ipc:///tmp/fl"
 
 const r = new addon.FrameReceiver(SHM_NAME, ZMQ_ADDR)
 // frame_count
