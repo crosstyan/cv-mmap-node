@@ -29,26 +29,29 @@ using Napi::Value;
 // https://github.com/nodejs/node-addon-api/blob/main/doc/typed_threadsafe_function.md
 // https://github.com/nodejs/node-addon-api/blob/main/doc/error_handling.md
 
+inline size_t BgrToRgbaSize(size_t bgr_size) {
+	return (bgr_size / 3) * 4;
+}
+
 void BgrToRgba(const std::span<const uint8_t> &src, Napi::Buffer<uint8_t> &dst) {
-	const auto expected_dst_size = (src.size() / 3) * 4;
-	if (dst.Length() != expected_dst_size) {
-		throw RangeError::New(dst.Env(), std::format("lhs({}) != rhs({})", dst.Length(), expected_dst_size));
+	if (const auto expected = BgrToRgbaSize(src.size()); dst.Length() != expected) {
+		throw RangeError::New(dst.Env(), std::format("dst_size({}) != expected({})", dst.Length(), expected));
 	}
 	size_t i = 0;
 	size_t j = 0;
 	while (i < src.size()) {
-		dst[j++] = src[i + 2];
-		dst[j++] = src[i + 1];
-		dst[j++] = src[i];
-		dst[j++] = 255;
+		dst[j]     = src[i + 2];
+		dst[j + 1] = src[i + 1];
+		dst[j + 2] = src[i];
+		dst[j + 3] = 255;
 		i += 3;
+		j += 4;
 	}
 }
 
 class FrameReceiver final : public Napi::ObjectWrap<FrameReceiver> {
-	std::unique_ptr<FrameReceiverImpl> impl_       = nullptr;
-	std::unique_ptr<Napi::Buffer<uint8_t>> buffer_ = nullptr;
-	ThreadSafeFunction tsfn_                       = nullptr;
+	std::unique_ptr<FrameReceiverImpl> impl_ = nullptr;
+	ThreadSafeFunction tsfn_                 = nullptr;
 
 	void onFrame(const sync_message_t &msg, std::span<const uint8_t> data) const;
 
@@ -89,8 +92,7 @@ inline void FrameReceiver::onFrame(const sync_message_t &msg, std::span<const ui
 		// Wraps the provided external data into a new Napi::Buffer object.
 		// When the external buffer is not supported,
 		// allocates a new Napi::Buffer object and copies the provided external data into it.
-		const auto size = (data.size() / 3) * 4;
-		auto buffer     = Napi::Buffer<uint8_t>::New(env, size);
+		auto buffer = Napi::Buffer<uint8_t>::New(env, BgrToRgbaSize(data.size()));
 		BgrToRgba(data, buffer);
 		obj.Set("data", std::move(buffer));
 		freeze.Call({obj});
