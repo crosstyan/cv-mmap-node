@@ -7,6 +7,7 @@ const SHM_NAME = "/fl"
 const ZMQ_ADDR = "ipc:///tmp/fl"
 
 const r = new addon.FrameReceiver(SHM_NAME, ZMQ_ADDR)
+r.setScaleFactor(0.3) // scale
 // frame_count
 const ret = r.start()
 console.log(ret)

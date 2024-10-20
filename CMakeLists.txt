@@ -11,6 +11,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_definitions(-DNAPI_VERSION=8 -DNAPI_CPP_EXCEPTIONS)
 
 find_package(cppzmq)
+find_package(OpenCV REQUIRED)
 
 # ----------- Node Addon Setup -----------
 add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES} ${CMAKE_JS_SRC})
@@ -26,6 +27,9 @@ set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "" SUFFIX ".node")
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_JS_INC})
 target_link_libraries(${PROJECT_NAME} ${CMAKE_JS_LIB})
 target_link_libraries(${PROJECT_NAME} cppzmq)
+
+target_include_directories(${PROJECT_NAME} PUBLIC ${OpenCV_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS})
 
 if (MSVC
         AND CMAKE_JS_NODELIB_DEF

@@ -12,6 +12,7 @@
 #include <print>
 #include <napi.h>
 #include <zmq_addon.hpp>
+#include <opencv2/opencv.hpp>
 #include <optional>
 
 namespace app {
@@ -52,6 +53,7 @@ void BgrToRgba(const std::span<const uint8_t> &src, Napi::Buffer<uint8_t> &dst) 
 class FrameReceiver final : public Napi::ObjectWrap<FrameReceiver> {
 	std::unique_ptr<FrameReceiverImpl> impl_ = nullptr;
 	ThreadSafeFunction tsfn_                 = nullptr;
+	float scale_factor_                      = 1.0f;
 
 	void onFrame(const sync_message_t &msg, std::span<const uint8_t> data) const;
 
@@ -64,6 +66,7 @@ public:
 	// might need event emitter or thread safe function
 	// no idea how to implement it
 	Napi::Value SetOnFrame(const Napi::CallbackInfo &info);
+	Napi::Value SetScaleFactor(const Napi::CallbackInfo &info);
 };
 
 inline void FrameReceiver::onFrame(const sync_message_t &msg, std::span<const uint8_t> data) const {
@@ -84,17 +87,30 @@ inline void FrameReceiver::onFrame(const sync_message_t &msg, std::span<const ui
 
 		// Create the object
 		auto obj = Object::New(env);
-		obj.Set("frame_count", msg.frame_count);
-		obj.Set("width", msg.info.width);
-		obj.Set("height", msg.info.height);
-		obj.Set("channels", msg.info.channels);
 		// https://github.com/nodejs/node-addon-api/blob/main/doc/buffer.md
 		// Wraps the provided external data into a new Napi::Buffer object.
 		// When the external buffer is not supported,
 		// allocates a new Napi::Buffer object and copies the provided external data into it.
-		auto buffer = Napi::Buffer<uint8_t>::New(env, BgrToRgbaSize(data.size()));
-		BgrToRgba(data, buffer);
-		obj.Set("data", std::move(buffer));
+		if (scale_factor_ == 1.0f) {
+			obj.Set("frame_count", msg.frame_count);
+			obj.Set("width", msg.info.width);
+			obj.Set("height", msg.info.height);
+			obj.Set("channels", msg.info.channels);
+			auto buffer = Napi::Buffer<uint8_t>::New(env, BgrToRgbaSize(data.size()));
+			BgrToRgba(data, buffer);
+			obj.Set("data", std::move(buffer));
+		} else {
+			auto mat = cv::Mat(msg.info.height, msg.info.width, CV_8UC3, const_cast<uint8_t *>(data.data()));
+			cv::Mat resized;
+			cv::resize(mat, resized, cv::Size(), scale_factor_, scale_factor_);
+			obj.Set("frame_count", msg.frame_count);
+			obj.Set("width", resized.cols);
+			obj.Set("height", resized.rows);
+			obj.Set("channels", resized.channels());
+			auto buffer = Napi::Buffer<uint8_t>::New(env, BgrToRgbaSize(resized.total() * resized.elemSize()));
+			BgrToRgba({resized.data, resized.total() * resized.elemSize()}, buffer);
+			obj.Set("data", std::move(buffer));
+		}
 		freeze.Call({obj});
 		jsCallback.Call({obj});
 		delete args_ptr;
@@ -121,6 +137,24 @@ inline Napi::Value FrameReceiver::Stop(const Napi::CallbackInfo &info) {
 		throw Error::New(env, "Not initialized");
 	}
 	impl_->stop();
+	return env.Undefined();
+}
+inline Napi::Value FrameReceiver::SetScaleFactor(const Napi::CallbackInfo &info) {
+	auto env = info.Env();
+	if (info.Length() < 1) {
+		throw TypeError::New(env, "Expected 1 argument (`scale_factor`)");
+	}
+	if (not info[0].IsNumber()) {
+		throw TypeError::New(env, "`scale_factor` is expected to be number");
+	}
+	auto factor = info[0].As<Number>().FloatValue();
+	if (factor <= 0.0f) {
+		throw RangeError::New(env, "`scale_factor` is expected to be greater than 0");
+	}
+	if (factor > 1.0f) {
+		throw RangeError::New(env, "`scale_factor` is expected to be less than or equal to 1");
+	}
+	scale_factor_ = factor;
 	return env.Undefined();
 }
 
@@ -163,6 +197,7 @@ inline Napi::Object FrameReceiver::Init(Napi::Env env, Napi::Object exports) {
 													  InstanceMethod("start", &FrameReceiver::Start),
 													  InstanceMethod("stop", &FrameReceiver::Stop),
 													  InstanceMethod("setOnFrame", &FrameReceiver::SetOnFrame),
+													  InstanceMethod("setScaleFactor", &FrameReceiver::SetScaleFactor),
 												  });
 	exports.Set("FrameReceiver", func);
 	return exports;
