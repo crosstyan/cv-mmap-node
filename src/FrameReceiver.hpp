@@ -84,6 +84,15 @@ inline void FrameReceiver::onFrame(const sync_message_t &msg, std::span<const ui
 		// Get the `Object.freeze` function
 		auto object_constructor = env.Global().Get("Object").As<Napi::Function>();
 		auto freeze             = object_constructor.Get("freeze").As<Napi::Function>();
+		if (msg.magic != FRAME_TOPIC_MAGIC) {
+			throw Error::New(env, "[from impl] invalid magic number");
+		}
+		if (msg.info.pixel_format != PixelFormat::BGR) {
+			throw Error::New(env, std::format("[from impl] unsupported pixel format {}, expecting BGR", pixel_format_to_string(msg.info.pixel_format)));
+		}
+		if (msg.info.depth != Depth::U8) {
+			throw Error::New(env, std::format("[from impl] unsupported depth {}, expecting U8", depth_to_string(msg.info.depth)));
+		}
 
 		// Create the object
 		auto obj = Object::New(env);
