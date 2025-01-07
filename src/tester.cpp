@@ -5,8 +5,8 @@
 #include <iostream>
 #include <print>
 
-constexpr auto SHM_NAME = "/psm_default";
-constexpr auto ZMQ_ADDR = "ipc:///tmp/0";
+constexpr auto SHM_NAME = "/tmp_vid";
+constexpr auto ZMQ_ADDR = "ipc:///tmp/tmp_vid";
 
 
 int main() {

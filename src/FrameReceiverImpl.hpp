@@ -11,6 +11,7 @@
 #include <expected>
 #include <utility>
 #include <format>
+#include <zmq.hpp>
 #include <zmq_addon.hpp>
 #include <SyncMsg.hpp>
 #include <sys/mman.h>
@@ -31,9 +32,52 @@ inline std::string to_hex(const std::span<const uint8_t> data) {
 	return ss.str();
 }
 
-constexpr auto FRAME_TOPIC_MAGIC = 0x7d;
-using unit_t                     = std::monostate;
-using on_frame_t                 = std::function<void(const sync_message_t &, std::span<const uint8_t>)>;
+const char *depth_to_string(const Depth depth) {
+	switch (depth) {
+	case Depth::U8:
+		return "U8";
+	case Depth::S8:
+		return "S8";
+	case Depth::U16:
+		return "U16";
+	case Depth::S16:
+		return "S16";
+	case Depth::F16:
+		return "F16";
+	case Depth::S32:
+		return "S32";
+	case Depth::F32:
+		return "F32";
+	case Depth::F64:
+		return "F64";
+	default:
+		return "unknown";
+	}
+}
+
+const char *pixel_format_to_string(const PixelFormat fmt) {
+	switch (fmt) {
+	case PixelFormat::RGB:
+		return "RGB";
+	case PixelFormat::BGR:
+		return "BGR";
+	case PixelFormat::RGBA:
+		return "RGBA";
+	case PixelFormat::BGRA:
+		return "BGRA";
+	case PixelFormat::GRAY:
+		return "GRAY";
+	case PixelFormat::YUV:
+		return "YUV";
+	case PixelFormat::YUYV:
+		return "YUYV";
+	default:
+		return "unknown";
+	}
+}
+
+using unit_t     = std::monostate;
+using on_frame_t = std::function<void(const sync_message_t &, std::span<const uint8_t>)>;
 class FrameReceiverImpl {
 	std::string shm_name;
 	std::string zmq_addr;
@@ -70,6 +114,7 @@ public:
 		has_init   = false;
 		this->ctx  = zmq::context_t{};
 		this->sock = zmq::socket_t(ctx, zmq::socket_type::sub);
+		this->sock.set(zmq::sockopt::conflate, true);
 		try {
 			sock.connect(zmq_addr);
 		} catch (const zmq::error_t &e) {
@@ -95,8 +140,21 @@ public:
 			is_running         = true;
 			const auto on_init = [this](const sync_message_t &msg) -> bool {
 #ifdef TRACE_LOG_STDOUT
-				std::println("Received init message: frame_count={}, width={}, height={}, channels={}, depth={}, buffer_size={}",
-							 msg.frame_count, msg.info.width, msg.info.height, msg.info.channels, msg.info.depth, msg.info.buffer_size);
+				std::println("Received init message: "
+							 "frame_count={}, "
+							 "width={}, "
+							 "height={}, "
+							 "channels={}, "
+							 "depth={}, "
+							 "buffer_size={}"
+							 "pixel_format={}",
+							 msg.frame_count,
+							 msg.info.width,
+							 msg.info.height,
+							 msg.info.channels,
+							 depth_to_string(msg.info.depth),
+							 msg.info.buffer_size,
+							 pixel_format_to_string(msg.info.pixel_format));
 #endif
 				reference_frame_info = msg.info;
 				shm_ptr              = mmap(nullptr, msg.info.buffer_size, PROT_READ, MAP_SHARED, shm_fd.value(), 0);
@@ -116,10 +174,6 @@ public:
 				zmq::message_t msg;
 				const auto res = sock.recv(msg, zmq::recv_flags::dontwait);
 				if (!res) {
-					continue;
-				}
-				if (msg.size() == 1) {
-					// skip the topic
 					continue;
 				}
 				const auto msg_opt = sync_message_t::unmarshal(std::span<uint8_t>(static_cast<uint8_t *>(msg.data()), *res));
