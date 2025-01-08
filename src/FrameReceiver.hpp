@@ -53,9 +53,9 @@ void BgrToRgba(const std::span<const uint8_t> &src, Napi::Buffer<uint8_t> &dst) 
 class FrameReceiver final : public Napi::ObjectWrap<FrameReceiver> {
 	std::unique_ptr<FrameReceiverImpl> impl_ = nullptr;
 	ThreadSafeFunction tsfn_                 = nullptr;
+	std::atomic_bool is_being_blocking_call_ = false;
 	float scale_factor_                      = 1.0f;
-
-	void onFrame(const sync_message_t &msg, std::span<const uint8_t> data) const;
+	void onFrame(const sync_message_t &msg, std::span<const uint8_t> data);
 
 public:
 	static Napi::Object Init(Napi::Env env, Napi::Object exports);
@@ -63,20 +63,23 @@ public:
 
 	Napi::Value Start(const Napi::CallbackInfo &info);
 	Napi::Value Stop(const Napi::CallbackInfo &info);
-	// might need event emitter or thread safe function
-	// no idea how to implement it
 	Napi::Value SetOnFrame(const Napi::CallbackInfo &info);
 	Napi::Value SetScaleFactor(const Napi::CallbackInfo &info);
 };
 
-inline void FrameReceiver::onFrame(const sync_message_t &msg, std::span<const uint8_t> data) const {
+inline void FrameReceiver::onFrame(const sync_message_t &msg, std::span<const uint8_t> data) {
 	if (tsfn_ == nullptr) {
+		return;
+	}
+	// only one callback is allowed to run at a time
+	if (is_being_blocking_call_) {
 		return;
 	}
 	struct frame_args_t {
 		sync_message_t msg;
 		std::span<const uint8_t> data;
 	};
+	static frame_args_t args;
 	auto callback = [this](Napi::Env env, Napi::Function jsCallback, frame_args_t *args_ptr) {
 		const auto &args = *args_ptr;
 		const auto &msg  = args.msg;
@@ -109,6 +112,7 @@ inline void FrameReceiver::onFrame(const sync_message_t &msg, std::span<const ui
 			BgrToRgba(data, buffer);
 			obj.Set("data", std::move(buffer));
 		} else {
+			// TODO: don't depend on OpenCV
 			auto mat = cv::Mat(msg.info.height, msg.info.width, CV_8UC3, const_cast<uint8_t *>(data.data()));
 			cv::Mat resized;
 			cv::resize(mat, resized, cv::Size(), scale_factor_, scale_factor_);
@@ -122,10 +126,13 @@ inline void FrameReceiver::onFrame(const sync_message_t &msg, std::span<const ui
 		}
 		freeze.Call({obj});
 		jsCallback.Call({obj});
-		delete args_ptr;
 	};
-	auto args = new frame_args_t{msg, data};
-	tsfn_.BlockingCall(args, std::move(callback));
+
+	is_being_blocking_call_ = true;
+	args.msg                = msg;
+	args.data               = data;
+	tsfn_.BlockingCall(&args, std::move(callback));
+	is_being_blocking_call_ = false;
 }
 
 inline Napi::Value FrameReceiver::Start(const Napi::CallbackInfo &info) {
