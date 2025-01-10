@@ -32,7 +32,7 @@ inline std::string to_hex(const std::span<const uint8_t> data) {
 	return ss.str();
 }
 
-const char *depth_to_string(const Depth depth) {
+inline const char *depth_to_string(const Depth depth) {
 	switch (depth) {
 	case Depth::U8:
 		return "U8";
@@ -55,7 +55,7 @@ const char *depth_to_string(const Depth depth) {
 	}
 }
 
-const char *pixel_format_to_string(const PixelFormat fmt) {
+inline const char *pixel_format_to_string(const PixelFormat fmt) {
 	switch (fmt) {
 	case PixelFormat::RGB:
 		return "RGB";
